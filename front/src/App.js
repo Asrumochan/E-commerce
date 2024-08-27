@@ -12,9 +12,9 @@ const App = () => {
  const [selectedProductId,setSelectedProductId]=useState([])
  const addId = (id) => {
   if (!selectedProductId.includes(id)) {
-    setSelectedProductId((prevIds) => [...prevIds, id]);
+    setSelectedProductId((prev) => [...prev, id]);
   }
-};
+}   
  return <>
   <Router>
         <nav className='navbar navbar-dark bg-dark navbar-expand-lg fixed-top'>

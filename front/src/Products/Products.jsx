@@ -11,7 +11,7 @@ const Products = ({addId}) => {
     .then((res)=>{
       setProducts(res.data)
     })
-    .catch()
+    .catch( )
    },[])
    const imgHandler=(evt)=>{
     evt.target.src="https://media.istockphoto.com/id/1318420912/vector/mock-up-screen-phone.jpg?s=612x612&w=0&k=20&c=z7RTcOE_vnT9eRcSEQhw0EVVRDb9JdDPaApfyO5nFxM="
