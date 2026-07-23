@@ -3,41 +3,62 @@ import { Link } from 'react-router-dom';
 
 const HomePage = ({ isLoggedIn }) => {
   return (
-    <section className="hero-wrap page-shell">
-      <div className="hero-panel">
-        <p className="hero-eyebrow">Terrazzo KS Experience</p>
-        <h1 className="hero-title">Build your store operations with confidence.</h1>
+    <section className="home-shell page-shell">
+      <div className="hero-panel home-hero-panel">
+        <p className="hero-eyebrow">TerraShop Home</p>
+        <h1 className="hero-title">Find products fast and checkout without friction.</h1>
         <p className="hero-text">
-          TerraShop combines a product catalog, wishlist, admin controls, and checkout flow into one reliable workspace.
-          Designed for speed, clarity, and growth.
+          Everything is organized in one place so you can discover products, save favorites, and place orders with fewer clicks.
         </p>
+
         <div className="hero-pill-row">
-          <span className="hero-pill">Account Sync</span>
-          <span className="hero-pill">Role Based Access</span>
-          <span className="hero-pill">MongoDB Persistence</span>
+          <span className="hero-pill">Simple Navigation</span>
+          <span className="hero-pill">Saved Cart & Wishlist</span>
+          <span className="hero-pill">Secure Account Access</span>
         </div>
+
         <div className="hero-actions">
           <Link className="btn btn-dark" to={isLoggedIn ? '/products' : '/login'}>
-            {isLoggedIn ? 'Browse Products' : 'Login to Browse Products'}
+            {isLoggedIn ? 'Start Shopping' : 'Login to Start Shopping'}
           </Link>
-          <Link className="btn btn-outline-dark" to={isLoggedIn ? '/cart' : '/login'}>
-            {isLoggedIn ? 'Go to Cart' : 'Login to Continue'}
+          <Link className="btn btn-outline-dark" to={isLoggedIn ? '/orders' : '/signup'}>
+            {isLoggedIn ? 'View My Orders' : 'Create Free Account'}
           </Link>
         </div>
       </div>
 
-      <div className="hero-grid">
-        <article className="hero-card card-tilt">
-          <h3>Operational Dashboard</h3>
-          <p>Monitor inventory value, low stock products, and catalog health at a glance.</p>
+      <div className="home-quick-grid">
+        <Link className="home-quick-card card-tilt" to={isLoggedIn ? '/products' : '/login'}>
+          <h3>Browse Products</h3>
+          <p>Search, filter, and sort products in seconds.</p>
+        </Link>
+        <Link className="home-quick-card card-tilt" to={isLoggedIn ? '/wishlist' : '/login'}>
+          <h3>Open Wishlist</h3>
+          <p>Keep track of items you want to buy later.</p>
+        </Link>
+        <Link className="home-quick-card card-tilt" to={isLoggedIn ? '/cart' : '/login'}>
+          <h3>Go to Cart</h3>
+          <p>Review totals, apply coupons, and checkout quickly.</p>
+        </Link>
+      </div>
+
+      <div className="home-info-grid">
+        <article className="home-info-card">
+          <h4>How it works</h4>
+          <ol className="home-steps">
+            <li>Create your account or log in.</li>
+            <li>Browse products and add to cart or wishlist.</li>
+            <li>Checkout and track your order history.</li>
+          </ol>
         </article>
-        <article className="hero-card card-tilt">
-          <h3>Smart Discovery</h3>
-          <p>Use search, sort, and price filtering to help customers find products faster.</p>
-        </article>
-        <article className="hero-card card-tilt">
-          <h3>Conversion Ready Cart</h3>
-          <p>Coupon, tax, and shipping breakdowns create a professional checkout experience.</p>
+
+        <article className="home-info-card">
+          <h4>Why users like TerraShop</h4>
+          <ul className="home-bullets">
+            <li>Fast product discovery with filters and sorting</li>
+            <li>Persistent cart, wishlist, and order history</li>
+            <li>Clean layout that works on mobile and desktop</li>
+          </ul>
         </article>
       </div>
     </section>

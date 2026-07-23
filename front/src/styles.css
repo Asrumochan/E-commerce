@@ -262,6 +262,73 @@ body {
   gap: 18px;
 }
 
+.home-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.home-hero-panel {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(245, 248, 251, 0.95));
+  border: 1px solid rgba(29, 42, 53, 0.08);
+}
+
+.home-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.home-quick-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(29, 42, 53, 0.08);
+  text-decoration: none;
+  color: inherit;
+  padding: 16px;
+}
+
+.home-quick-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.04rem;
+}
+
+.home-quick-card p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.home-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.home-info-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(29, 42, 53, 0.08);
+  padding: 16px;
+}
+
+.home-info-card h4 {
+  margin: 0 0 10px 0;
+  font-family: 'Outfit', sans-serif;
+}
+
+.home-steps,
+.home-bullets {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-muted);
+}
+
+.home-steps li,
+.home-bullets li {
+  margin-bottom: 8px;
+}
+
 .hero-panel,
 .auth-card,
 .welcome-banner {
@@ -881,6 +948,11 @@ body {
   .hero-grid,
   .welcome-metrics,
   .order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-quick-grid,
+  .home-info-grid {
     grid-template-columns: 1fr;
   }
 }
