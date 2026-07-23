@@ -10,6 +10,6 @@ export const apiClient = axios.create({
   }
 });
 
-export const extractErrorMessage = (error, fallback = 'Something went wrong') => {
+export const extractErrorMessage = (error, fallback = 'Something went wrong.') => {
   return error?.response?.data?.msg || error?.message || fallback;
 };
