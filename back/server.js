@@ -52,7 +52,7 @@ app.use((request, response) => {
     });
 });
 
-app.use((err, request, response, next) => {
+app.use((err, request, response) => {
     console.error(err);
     response.status(err.status || 500).json({
         msg: err.message || 'Internal server error'
