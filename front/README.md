@@ -6,24 +6,32 @@ This frontend is configured to publish at:
 
 - https://asrumochan.github.io/E-commerce
 
-Branch deployment steps:
+Branch deployment setup:
 
-1. Install dependencies
-2. Run deploy script from the `front` folder
+1. In GitHub repository settings, open Pages.
+2. Set Source to "Deploy from a branch".
+3. Select branch `gh-pages` and folder `/ (root)`.
+4. Save the settings.
+
+How deployment works now:
+
+1. Push your latest code to branch `main`.
+2. GitHub Actions workflow `.github/workflows/deploy-gh-pages.yml` builds the app from `front`.
+3. The workflow publishes `front/build` to branch `gh-pages`.
+4. GitHub Pages serves the updated site from `gh-pages`.
+
+Optional local deploy from the `front` folder:
 
 ```bash
 npm install
 npm run deploy
 ```
 
-3. In GitHub repository settings, open Pages.
-4. Set Source to "Deploy from a branch".
-5. Select branch `gh-pages` and folder `/ (root)`.
-
 Important:
 
 - The `gh-pages` branch appears after the first successful `npm run deploy` push.
-- If you do not see `gh-pages` yet, run `npm run deploy` once and refresh the Pages settings.
+- If you do not see `gh-pages` yet, push to `main` once and wait for the workflow to finish.
+- Deployment usually takes around 1 to 3 minutes after a successful workflow run.
 
 Notes:
 
