@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Link, BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faRightFromBracket, faShoppingCart, faUser } from '@fortawesome/free-solid-svg-icons';
 import Products from './Products/Products';
 import Admin from './Products/Admin';
 import CreateProduct from './Products/CreateProduct';
 import UpdateProduct from './Products/UpdateProduct';
 import Cart from './Products/cart';
 import Wishlist from './Products/Wishlist';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import WelcomePage from './pages/WelcomePage';
 import './styles.css';
 
 const App = () => {
@@ -36,6 +39,18 @@ const App = () => {
     }
   });
   const [notification, setNotification] = useState('');
+  const [authUser, setAuthUser] = useState(() => {
+    const saved = localStorage.getItem('authUser');
+    if (!saved) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
@@ -44,6 +59,15 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
   }, [wishlistItems]);
+
+  useEffect(() => {
+    if (!authUser) {
+      localStorage.removeItem('authUser');
+      return;
+    }
+
+    localStorage.setItem('authUser', JSON.stringify(authUser));
+  }, [authUser]);
 
   useEffect(() => {
     if (!notification) {
@@ -104,6 +128,23 @@ const App = () => {
     setCartItems([]);
   };
 
+  const loginUser = (userProfile) => {
+    setAuthUser(userProfile);
+    setNotification(`Welcome ${userProfile.name}`);
+  };
+
+  const logoutUser = () => {
+    setAuthUser(null);
+    setNotification('Logged out successfully');
+  };
+
+  const ProtectedWelcomeRoute = ({ children }) => {
+    if (!authUser) {
+      return <Navigate to="/login" replace />;
+    }
+    return children;
+  };
+
   return (
     <Router>
       <nav className="app-nav">
@@ -114,11 +155,17 @@ const App = () => {
           <span className="brand-subtitle">Professional Commerce Suite</span>
         </div>
         <div className="nav-links-wrap">
+          <Link className="nav-link-item" to="/">
+            Home
+          </Link>
           <Link className="nav-link-item" to="/products">
             Products
           </Link>
           <Link className="nav-link-item" to="/wishlist">
             Wishlist
+          </Link>
+          <Link className="nav-link-item" to="/welcome">
+            Welcome
           </Link>
           <Link className="nav-link-item" to="/create">
             New Product
@@ -127,6 +174,17 @@ const App = () => {
             Admin
           </Link>
         </div>
+        {!authUser ? (
+          <Link className="auth-pill" to="/login" aria-label="Open login page">
+            <FontAwesomeIcon icon={faUser} />
+            <span>Login</span>
+          </Link>
+        ) : (
+          <button className="auth-pill logout" type="button" onClick={logoutUser}>
+            <FontAwesomeIcon icon={faRightFromBracket} />
+            <span>{authUser.name}</span>
+          </button>
+        )}
         <Link to="/cart" className="cart-pill" aria-label="Open cart">
           <FontAwesomeIcon icon={faShoppingCart} />
           <span>{cartCount}</span>
@@ -141,9 +199,16 @@ const App = () => {
 
       <main className="app-main container-fluid">
         <Routes>
+          <Route path="/" element={<HomePage isLoggedIn={!!authUser} />} />
+          <Route path="/home" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={<LoginPage onLogin={loginUser} isLoggedIn={!!authUser} />} />
           <Route
-            path="/"
-            element={<Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />}
+            path="/welcome"
+            element={
+              <ProtectedWelcomeRoute>
+                <WelcomePage user={authUser} cartCount={cartCount} wishlistCount={wishlistCount} />
+              </ProtectedWelcomeRoute>
+            }
           />
           <Route
             path="/products"
