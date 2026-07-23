@@ -1,5 +1,31 @@
 # Getting Started with Create React App
 
+## Deploy to GitHub Pages
+
+This frontend is configured to publish at:
+
+- https://asrumochan.github.io/E-commerce
+
+Automatic deployment is configured through:
+
+- .github/workflows/deploy-gh-pages.yml
+
+Manual deploy (optional):
+
+1. Install dependencies
+2. Run deploy script
+
+```bash
+npm install
+npm run deploy
+```
+
+Notes:
+
+- `homepage` is set in package.json so static assets resolve correctly.
+- React Router uses `basename={process.env.PUBLIC_URL}` for subpath routing.
+- `public/404.html` is included for GitHub Pages SPA fallback behavior.
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts

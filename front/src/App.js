@@ -191,7 +191,7 @@ const App = () => {
   };
 
   return (
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <div className="ambient-orb orb-a" />
       <div className="ambient-orb orb-b" />
       <div className="ambient-grid" />

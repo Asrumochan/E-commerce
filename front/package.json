@@ -1,6 +1,7 @@
 {
   "name": "front",
   "version": "0.1.0",
+  "homepage": "https://asrumochan.github.io/E-commerce",
   "private": true,
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
@@ -19,8 +20,13 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.2.0"
   },
   "eslintConfig": {
     "extends": [
