@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
+const Wishlist = require('../models/Wishlist');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 8;
@@ -135,6 +136,15 @@ const getOrCreateCart = async (userId) => {
     return cart;
 };
 
+const getOrCreateWishlist = async (userId) => {
+    let wishlist = await Wishlist.findOne({ user: userId }).populate('items.product');
+    if (!wishlist) {
+        wishlist = await Wishlist.create({ user: userId, items: [] });
+        wishlist = await Wishlist.findById(wishlist._id).populate('items.product');
+    }
+    return wishlist;
+};
+
 const formatCartResponse = (cartDoc) => {
     const items = (cartDoc.items || [])
         .filter((item) => item.product)
@@ -153,6 +163,24 @@ const formatCartResponse = (cartDoc) => {
         items,
         totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
         subtotal: items.reduce((sum, item) => sum + item.lineTotal, 0)
+    };
+};
+
+const formatWishlistResponse = (wishlistDoc) => {
+    const items = (wishlistDoc.items || [])
+        .filter((item) => item.product)
+        .map((item) => ({
+            _id: item.product._id,
+            name: item.product.name,
+            image: item.product.image,
+            price: item.product.price,
+            qty: item.product.qty,
+            info: item.product.info
+        }));
+
+    return {
+        items,
+        totalItems: items.length
     };
 };
 
@@ -283,6 +311,95 @@ router.post('/auth/login', async (request, response) => {
         console.error(err);
         response.status(500).json({
             msg : err.message
+        });
+    }
+});
+
+router.get('/wishlist', requireAuth, async (request, response) => {
+    try {
+        const wishlist = await getOrCreateWishlist(request.authUser._id);
+        return response.status(200).json(formatWishlistResponse(wishlist));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.post('/wishlist/items', requireAuth, async (request, response) => {
+    try {
+        const productId = request.body.productId;
+
+        if (!validateObjectId(productId)) {
+            return response.status(400).json({
+                msg: 'Invalid product id'
+            });
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return response.status(404).json({
+                msg: 'No Product Found'
+            });
+        }
+
+        const wishlist = await getOrCreateWishlist(request.authUser._id);
+        const exists = wishlist.items.some((entry) => String(entry.product._id || entry.product) === String(productId));
+
+        if (!exists) {
+            wishlist.items.push({ product: productId });
+            await wishlist.save();
+        }
+
+        const refreshed = await Wishlist.findById(wishlist._id).populate('items.product');
+        return response.status(200).json(formatWishlistResponse(refreshed));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.delete('/wishlist/items/:productId', requireAuth, async (request, response) => {
+    try {
+        const productId = request.params.productId;
+
+        if (!validateObjectId(productId)) {
+            return response.status(400).json({
+                msg: 'Invalid product id'
+            });
+        }
+
+        const wishlist = await getOrCreateWishlist(request.authUser._id);
+        wishlist.items = wishlist.items.filter((entry) => String(entry.product._id || entry.product) !== String(productId));
+        await wishlist.save();
+
+        const refreshed = await Wishlist.findById(wishlist._id).populate('items.product');
+        return response.status(200).json(formatWishlistResponse(refreshed));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.delete('/wishlist', requireAuth, async (request, response) => {
+    try {
+        const wishlist = await getOrCreateWishlist(request.authUser._id);
+        wishlist.items = [];
+        await wishlist.save();
+        return response.status(200).json(formatWishlistResponse(wishlist));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
         });
     }
 });

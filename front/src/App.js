@@ -18,18 +18,7 @@ import './styles.css';
 const App = () => {
   const [cartItems, setCartItems] = useState([]);
   const [orderHistory, setOrderHistory] = useState([]);
-  const [wishlistItems, setWishlistItems] = useState(() => {
-    const saved = localStorage.getItem('wishlistItems');
-    if (!saved) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return [];
-    }
-  });
+  const [wishlistItems, setWishlistItems] = useState([]);
   const [notification, setNotification] = useState('');
   const [authUser, setAuthUser] = useState(() => {
     const saved = localStorage.getItem('authUser');
@@ -45,15 +34,12 @@ const App = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
-
-  useEffect(() => {
     if (!authUser) {
       localStorage.removeItem('authUser');
       delete apiClient.defaults.headers.common['x-user-id'];
       setCartItems([]);
       setOrderHistory([]);
+      setWishlistItems([]);
       return;
     }
 
@@ -62,14 +48,16 @@ const App = () => {
 
     const fetchUserData = async () => {
       try {
-        const [cartResponse, ordersResponse] = await Promise.all([
+        const [cartResponse, ordersResponse, wishlistResponse] = await Promise.all([
           apiClient.get('/cart'),
-          apiClient.get('/orders')
+          apiClient.get('/orders'),
+          apiClient.get('/wishlist')
         ]);
         setCartItems(cartResponse.data.items || []);
         setOrderHistory(ordersResponse.data.data || []);
+        setWishlistItems(wishlistResponse.data.items || []);
       } catch (err) {
-        setNotification(extractErrorMessage(err, 'Unable to sync user cart/orders'));
+        setNotification(extractErrorMessage(err, 'Unable to sync user data'));
       }
     };
 
@@ -111,14 +99,24 @@ const App = () => {
   const isWishlisted = (productId) => wishlistItems.some((item) => item._id === productId);
 
   const toggleWishlist = (product) => {
-    setWishlistItems((prev) => {
-      if (prev.some((item) => item._id === product._id)) {
-        setNotification(`${product.name} removed from wishlist`);
-        return prev.filter((item) => item._id !== product._id);
-      }
-      setNotification(`${product.name} saved to wishlist`);
-      return [...prev, product];
-    });
+    if (!authUser) {
+      setNotification('Please login to manage wishlist');
+      return;
+    }
+
+    const exists = wishlistItems.some((item) => item._id === product._id);
+    const request = exists
+      ? apiClient.delete(`/wishlist/items/${product._id}`)
+      : apiClient.post('/wishlist/items', { productId: product._id });
+
+    request
+      .then((response) => {
+        setWishlistItems(response.data.items || []);
+        setNotification(exists ? `${product.name} removed from wishlist` : `${product.name} saved to wishlist`);
+      })
+      .catch((err) => {
+        setNotification(extractErrorMessage(err, 'Unable to update wishlist'));
+      });
   };
 
   const updateCartQuantity = async (productId, delta) => {
@@ -170,7 +168,6 @@ const App = () => {
 
   const logoutUser = () => {
     setAuthUser(null);
-    setWishlistItems([]);
     setNotification('Logged out successfully');
   };
 
