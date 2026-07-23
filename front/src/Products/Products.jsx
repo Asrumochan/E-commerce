@@ -1,48 +1,181 @@
-import  Axios  from 'axios';
-import React, { useEffect, useState } from 'react'
-import {useNavigate} from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import { apiClient, extractErrorMessage } from '../api/client';
 
-const Products = ({addId}) => {
-  let navigate=useNavigate()
-   const [products,setProducts]=useState([]);
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&q=80';
 
-   useEffect(()=>{
-    Axios.get("http://127.0.0.1:5000/api/products")
-    .then((res)=>{
-      setProducts(res.data)
-    })
-    .catch()
-   },[])
-   const imgHandler=(evt)=>{
-    evt.target.src="https://media.istockphoto.com/id/1318420912/vector/mock-up-screen-phone.jpg?s=612x612&w=0&k=20&c=z7RTcOE_vnT9eRcSEQhw0EVVRDb9JdDPaApfyO5nFxM="
-   }
-   const addCart=(id)=>{
-          addId(id)
-   }
+const Products = ({ onAddToCart }) => {
+  const [products, setProducts] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, page: 1, limit: 8, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [order, setOrder] = useState('desc');
+  const [inStock, setInStock] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiClient.get('/products', {
+        params: {
+          page,
+          limit: 8,
+          search: search || undefined,
+          sortBy,
+          order,
+          inStock
+        }
+      });
+      setProducts(response.data.data || []);
+      setMeta(response.data.meta || { total: 0, page: 1, limit: 8, totalPages: 1 });
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Failed to fetch products'));
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [search, sortBy, order, inStock, page]);
+
+  const imgHandler = (evt) => {
+    evt.target.src = FALLBACK_IMAGE;
+  };
+
+  const submitSearch = (evt) => {
+    evt.preventDefault();
+    setPage(1);
+    setSearch(searchInput.trim());
+  };
+
   return (
-    <div className='mt-5'>
-         <div className="row">
-         {
-          products.map((product)=>{
-            return <div className="col-md-3 mt-3">
-                 <div className="card">
-                  <div className="card-header">
-                    <img src={product.image} onError={imgHandler} style={{height:"200px"}} />
-                  </div>
-                  <div className="card-body">
-                    <h5>{'Name : '+ product.name}</h5>
-                    <h5>{'Qty : '+product.qty}</h5>
-                    <h5>{'Price : '+product.price}</h5>
-                    <h5>{'Info: '+product.info}</h5>
-                    <btn className='btn btn-success' onClick={()=>addCart(product._id)}>Add to Cart</btn>
-                  </div>
-                 </div>
-            </div>
-          })
-         }
-         </div>
-    </div>
-  )
-}
+    <section>
+      <div className="page-header">
+        <h1 className="page-title">Product Catalog</h1>
+        <p className="page-subtitle">Curated inventory with live controls and performance-ready paging.</p>
+      </div>
 
-export default Products
+      <div className="toolbar-card">
+        <form className="row g-3 align-items-end" onSubmit={submitSearch}>
+          <div className="col-lg-4">
+            <label className="form-label">Search</label>
+            <input
+              className="form-control"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by product name"
+            />
+          </div>
+          <div className="col-lg-2">
+            <label className="form-label">Sort By</label>
+            <select className="form-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="createdAt">Newest</option>
+              <option value="name">Name</option>
+              <option value="price">Price</option>
+              <option value="qty">Quantity</option>
+            </select>
+          </div>
+          <div className="col-lg-2">
+            <label className="form-label">Order</label>
+            <select className="form-select" value={order} onChange={(e) => setOrder(e.target.value)}>
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+          <div className="col-lg-2 form-check mt-4">
+            <input
+              id="inStockFilter"
+              className="form-check-input"
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => {
+                setPage(1);
+                setInStock(e.target.checked);
+              }}
+            />
+            <label className="form-check-label" htmlFor="inStockFilter">
+              In stock only
+            </label>
+          </div>
+          <div className="col-lg-2">
+            <button className="btn btn-primary w-100" type="submit">
+              Apply
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {loading && <div className="status-card">Loading products...</div>}
+      {!loading && error && <div className="status-card status-error">{error}</div>}
+
+      {!loading && !error && (
+        <>
+          <div className="row g-4">
+            {products.map((product) => {
+              return (
+                <div className="col-sm-6 col-lg-3" key={product._id}>
+                  <article className="product-card">
+                    <img
+                      src={product.image}
+                      onError={imgHandler}
+                      alt={product.name}
+                      className="product-image"
+                    />
+                    <div className="product-content">
+                      <h3 className="product-title">{product.name}</h3>
+                      <p className="product-info">{product.info}</p>
+                      <div className="product-row">
+                        <span className="price-tag">INR {product.price}</span>
+                        <span className={product.qty > 0 ? 'stock-tag' : 'stock-tag out'}>
+                          {product.qty > 0 ? `${product.qty} in stock` : 'Out of stock'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-success w-100"
+                        disabled={product.qty <= 0}
+                        onClick={() => onAddToCart(product)}
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  </article>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pagination-wrap">
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              disabled={meta.page <= 1}
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            >
+              Previous
+            </button>
+            <span className="page-indicator">
+              Page {meta.page} of {Math.max(meta.totalPages || 1, 1)}
+            </span>
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              disabled={meta.page >= Math.max(meta.totalPages || 1, 1)}
+              onClick={() => setPage((prev) => prev + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+};
+
+export default Products;
