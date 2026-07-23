@@ -137,6 +137,13 @@ const App = () => {
     setNotification('Logged out successfully');
   };
 
+  const ProtectedRoute = ({ children }) => {
+    if (!authUser) {
+      return <Navigate to="/login" replace />;
+    }
+    return children;
+  };
+
   return (
     <Router>
       <nav className="app-nav">
@@ -193,25 +200,56 @@ const App = () => {
           <Route path="/login" element={<LoginPage onLogin={loginUser} isLoggedIn={!!authUser} />} />
           <Route
             path="/products"
-            element={<Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />}
+            element={
+              <ProtectedRoute>
+                <Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/wishlist"
-            element={<Wishlist items={wishlistItems} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} />}
+            element={
+              <ProtectedRoute>
+                <Wishlist items={wishlistItems} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} />
+              </ProtectedRoute>
+            }
           />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/create" element={<CreateProduct />} />
-          <Route path="/update/:id" element={<UpdateProduct />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create"
+            element={
+              <ProtectedRoute>
+                <CreateProduct />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/update/:id"
+            element={
+              <ProtectedRoute>
+                <UpdateProduct />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/cart"
             element={
-              <Cart
-                cartItems={cartItems}
-                onIncrease={(id) => updateCartQuantity(id, 1)}
-                onDecrease={(id) => updateCartQuantity(id, -1)}
-                onRemove={removeFromCart}
-                onClear={clearCart}
-              />
+              <ProtectedRoute>
+                <Cart
+                  cartItems={cartItems}
+                  onIncrease={(id) => updateCartQuantity(id, 1)}
+                  onDecrease={(id) => updateCartQuantity(id, -1)}
+                  onRemove={removeFromCart}
+                  onClear={clearCart}
+                />
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<div className="status-card status-error">Page not found</div>} />

@@ -12,8 +12,8 @@ const HomePage = ({ isLoggedIn }) => {
           Designed for speed, clarity, and growth.
         </p>
         <div className="hero-actions">
-          <Link className="btn btn-dark" to="/products">
-            Browse Products
+          <Link className="btn btn-dark" to={isLoggedIn ? '/products' : '/login'}>
+            {isLoggedIn ? 'Browse Products' : 'Login to Browse Products'}
           </Link>
           <Link className="btn btn-outline-dark" to={isLoggedIn ? '/cart' : '/login'}>
             {isLoggedIn ? 'Go to Cart' : 'Login to Continue'}
