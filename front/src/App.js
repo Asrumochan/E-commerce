@@ -10,7 +10,6 @@ import Cart from './Products/cart';
 import Wishlist from './Products/Wishlist';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import WelcomePage from './pages/WelcomePage';
 import './styles.css';
 
 const App = () => {
@@ -138,13 +137,6 @@ const App = () => {
     setNotification('Logged out successfully');
   };
 
-  const ProtectedWelcomeRoute = ({ children }) => {
-    if (!authUser) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
-  };
-
   return (
     <Router>
       <nav className="app-nav">
@@ -163,9 +155,6 @@ const App = () => {
           </Link>
           <Link className="nav-link-item" to="/wishlist">
             Wishlist
-          </Link>
-          <Link className="nav-link-item" to="/welcome">
-            Welcome
           </Link>
           <Link className="nav-link-item" to="/create">
             New Product
@@ -202,14 +191,6 @@ const App = () => {
           <Route path="/" element={<HomePage isLoggedIn={!!authUser} />} />
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage onLogin={loginUser} isLoggedIn={!!authUser} />} />
-          <Route
-            path="/welcome"
-            element={
-              <ProtectedWelcomeRoute>
-                <WelcomePage user={authUser} cartCount={cartCount} wishlistCount={wishlistCount} />
-              </ProtectedWelcomeRoute>
-            }
-          />
           <Route
             path="/products"
             element={<Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />}

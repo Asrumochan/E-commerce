@@ -9,7 +9,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
   const [error, setError] = useState('');
 
   if (isLoggedIn) {
-    return <Navigate to="/welcome" replace />;
+    return <Navigate to="/products" replace />;
   }
 
   const onChange = (event) => {
@@ -48,7 +48,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
     <section className="auth-wrap">
       <div className="auth-card">
         <h1 className="page-title">Login</h1>
-        <p className="page-subtitle">Access your welcome dashboard and manage your commerce space.</p>
+        <p className="page-subtitle">Sign in and continue managing your commerce space.</p>
 
         {error && <div className="status-card status-error">{error}</div>}
 

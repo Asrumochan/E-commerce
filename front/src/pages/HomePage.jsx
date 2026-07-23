@@ -15,8 +15,8 @@ const HomePage = ({ isLoggedIn }) => {
           <Link className="btn btn-dark" to="/products">
             Browse Products
           </Link>
-          <Link className="btn btn-outline-dark" to={isLoggedIn ? '/welcome' : '/login'}>
-            {isLoggedIn ? 'Go to Welcome Page' : 'Login to Continue'}
+          <Link className="btn btn-outline-dark" to={isLoggedIn ? '/cart' : '/login'}>
+            {isLoggedIn ? 'Go to Cart' : 'Login to Continue'}
           </Link>
         </div>
       </div>
