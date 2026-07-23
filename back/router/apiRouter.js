@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const Product = require('../models/Product');
+const User = require('../models/User');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 8;
@@ -56,7 +58,104 @@ const sanitizeProductPayload = (body) => ({
     info: typeof body.info === 'string' ? body.info.trim() : body.info
 });
 
+const sanitizeUserPayload = (body) => ({
+    name: typeof body.name === 'string' ? body.name.trim() : '',
+    email: typeof body.email === 'string' ? body.email.trim().toLowerCase() : '',
+    password: typeof body.password === 'string' ? body.password : ''
+});
+
 const validateObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+router.post('/auth/signup', async (request, response) => {
+    try {
+        const { name, email, password } = sanitizeUserPayload(request.body);
+
+        if (!name || !email || !password) {
+            return response.status(400).json({
+                msg: 'Name, email and password are required'
+            });
+        }
+
+        if (password.length < 6) {
+            return response.status(400).json({
+                msg: 'Password must be at least 6 characters'
+            });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return response.status(409).json({
+                msg: 'An account with this email already exists'
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword
+        });
+
+        return response.status(201).json({
+            msg: 'Signup successful',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                loggedInAt: new Date().toISOString()
+            }
+        });
+    }
+    catch (err) {
+        console.error(err);
+        response.status(500).json({
+            msg : err.message
+        });
+    }
+});
+
+router.post('/auth/login', async (request, response) => {
+    try {
+        const { email, password } = sanitizeUserPayload(request.body);
+
+        if (!email || !password) {
+            return response.status(400).json({
+                msg: 'Email and password are required'
+            });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return response.status(401).json({
+                msg: 'Invalid email or password'
+            });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return response.status(401).json({
+                msg: 'Invalid email or password'
+            });
+        }
+
+        return response.status(200).json({
+            msg: 'Login successful',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                loggedInAt: new Date().toISOString()
+            }
+        });
+    }
+    catch (err) {
+        console.error(err);
+        response.status(500).json({
+            msg : err.message
+        });
+    }
+});
 
 /*
     USAGE : Get all the products

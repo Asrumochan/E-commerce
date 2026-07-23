@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { apiClient, extractErrorMessage } from '../api/client';
 
 const LoginPage = ({ onLogin, isLoggedIn }) => {
   const [credentials, setCredentials] = useState({
@@ -7,6 +8,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
     password: ''
   });
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   if (isLoggedIn) {
     return <Navigate to="/products" replace />;
@@ -17,7 +19,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
     setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault();
     setError('');
 
@@ -34,14 +36,15 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
       return;
     }
 
-    const namePart = email.split('@')[0] || 'User';
-    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-
-    onLogin({
-      name: displayName,
-      email,
-      loggedInAt: new Date().toISOString()
-    });
+    setSubmitting(true);
+    try {
+      const response = await apiClient.post('/auth/login', { email, password });
+      onLogin(response.data.user);
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Unable to login'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -77,10 +80,13 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
               required
             />
           </div>
-          <button className="btn btn-primary" type="submit">
-            Login
+          <button className="btn btn-primary" type="submit" disabled={submitting}>
+            {submitting ? 'Signing in...' : 'Login'}
           </button>
         </form>
+        <p className="auth-switch-text">
+          No account yet? <Link to="/signup">Create one</Link>
+        </p>
       </div>
     </section>
   );

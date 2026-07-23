@@ -118,6 +118,15 @@ body {
   border: none;
 }
 
+.auth-pill.secondary {
+  background: #0f766e;
+}
+
+.auth-links-wrap {
+  display: inline-flex;
+  gap: 8px;
+}
+
 .auth-pill.logout {
   background: #334155;
 }
@@ -225,6 +234,21 @@ body {
 
 .auth-card {
   width: min(560px, 100%);
+}
+
+.auth-switch-text {
+  margin: 12px 0 0 0;
+  color: var(--ink-muted);
+}
+
+.auth-switch-text a {
+  color: var(--accent-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-switch-text a:hover {
+  text-decoration: underline;
 }
 
 .welcome-metrics {
@@ -523,6 +547,11 @@ body {
   .checkout-bar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .auth-links-wrap {
+    width: 100%;
+    justify-content: center;
   }
 
   .admin-toolbar {

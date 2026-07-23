@@ -10,6 +10,7 @@ import Cart from './Products/cart';
 import Wishlist from './Products/Wishlist';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import './styles.css';
 
 const App = () => {
@@ -171,10 +172,15 @@ const App = () => {
           </Link>
         </div>
         {!authUser ? (
-          <Link className="auth-pill" to="/login" aria-label="Open login page">
-            <FontAwesomeIcon icon={faUser} />
-            <span>Login</span>
-          </Link>
+          <div className="auth-links-wrap">
+            <Link className="auth-pill secondary" to="/signup" aria-label="Open signup page">
+              <span>Sign Up</span>
+            </Link>
+            <Link className="auth-pill" to="/login" aria-label="Open login page">
+              <FontAwesomeIcon icon={faUser} />
+              <span>Login</span>
+            </Link>
+          </div>
         ) : (
           <button className="auth-pill logout" type="button" onClick={logoutUser}>
             <FontAwesomeIcon icon={faRightFromBracket} />
@@ -198,6 +204,7 @@ const App = () => {
           <Route path="/" element={<HomePage isLoggedIn={!!authUser} />} />
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage onLogin={loginUser} isLoggedIn={!!authUser} />} />
+          <Route path="/signup" element={<SignupPage onSignup={loginUser} isLoggedIn={!!authUser} />} />
           <Route
             path="/products"
             element={
