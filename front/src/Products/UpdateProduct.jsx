@@ -1,90 +1,160 @@
-import Axios from 'axios';
-import React, { useEffect, useState,useRef} from 'react'
-import {useNavigate,useLocation} from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { apiClient, extractErrorMessage } from '../api/client';
 
 const UpdateProduct = () => {
-  let location=useLocation();
-  let navigate=useNavigate();
-  let id=location.state;
-  const [product,setProduct]=useState({})
-  const [imageString, setImageString] = useState('');
-  const formRef = useRef(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  useEffect(()=>{
-    Axios.get( `http://127.0.0.1:5000/api/products/${id}`)
-    .then((resp)=>{
-      setProduct(resp.data)
-    })
-  },[])
-  const updateHandler=(evt)=>{
-    setProduct({...product,[evt.target.name]:evt.target.value})
-}
-const handleImageChange = (event) => { // 5MB (adjust as needed)
-  const file = event.target.files[0];
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = (event) => {
-    const imageData = event.target.result;
-    setImageString(imageData);
-    console.log(imageString)
-    setProduct({...product,image:imageString})
+  const [product, setProduct] = useState({
+    name: '',
+    image: '',
+    price: '',
+    qty: '',
+    info: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const response = await apiClient.get(`/products/${id}`);
+        setProduct(response.data);
+      } catch (err) {
+        setError(extractErrorMessage(err, 'Unable to load product'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  const updateHandler = (evt) => {
+    const { name, value } = evt.target;
+    setProduct((prev) => ({ ...prev, [name]: value }));
   };
-  
-};
-const addProduct=(evt)=>{
-  evt.preventDefault();
-  Axios.put(`http://127.0.0.1:5000/api/products/${id}`,product)
-  .then((resp)=>{
-    console.log("product updated")
-    navigate('/admin')
-  })
-  .catch((err)=>{
-    console.log(err)
-  })
-  
-}
-  return (
-    <div className="container mt-5">
 
-    <div className="row">
-      <div className="col-10">
-        <div className="card">
-          <div className="card-header">
-            <h1>Update Product</h1>
-      <pre>{JSON.stringify(product)}</pre>
-          </div>
-          <div className="card-body ">
-            <form className='form' onSubmit={addProduct} ref={formRef} >
-              <div className="form-group mt-4 border border-primary">
-                <label>Enter Name</label>
-              <input className='form-control' required type="text" value={product.name}  onChange={updateHandler} name="name"/>
-              </div>
-              <div className="form-group mt-4 border border-primary">
-              <label>Upload Image</label>
-              <input className='form-control'  type="file"   onChange={handleImageChange} name="image"/>
-              </div>
-              <div className="form-group mt-4 border border-primary">
-              <label>Enter Price</label>
-              <input className='form-control' required type="number" value={product.price} onChange={updateHandler} name="price" />
-              </div>
-              <div className="form-group mt-4 border border-primary">
-              <label>Enter Quantity</label>
-              <input className='form-control' required type="number" value={product.qty} onChange={updateHandler} name="qty"/>
-              </div>
-              <div className="form-group mt-4 border border-primary">
-              <label>Enter Info</label>
-              <input className='form-control' required type="text" value={product.info} onChange={updateHandler} name="info"/>
-              </div>
-              <div className="form-group mt-4">
-                <input className='form-control btn btn-primary' type="submit" value='Add Product' />
-              </div>
-            </form>
-          </div>
+  const handleImageFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (loadEvent) => {
+      setProduct((prev) => ({ ...prev, image: loadEvent.target?.result || prev.image }));
+    };
+  };
+
+  const saveProduct = async (evt) => {
+    evt.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    try {
+      await apiClient.put(`/products/${id}`, {
+        ...product,
+        price: Number(product.price),
+        qty: Number(product.qty)
+      });
+      navigate('/admin');
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Unable to update product'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="status-card">Loading product details...</div>;
+  }
+
+  return (
+    <div className="row justify-content-center">
+      <div className="col-lg-8">
+        <div className="form-shell">
+          <h1 className="page-title">Update Product</h1>
+          <p className="page-subtitle">Keep your inventory information accurate and up to date.</p>
+
+          {error && <div className="status-card status-error">{error}</div>}
+
+          <form className="form-grid" onSubmit={saveProduct}>
+            <div>
+              <label className="form-label">Product Name</label>
+              <input
+                className="form-control"
+                type="text"
+                required
+                name="name"
+                value={product.name}
+                onChange={updateHandler}
+              />
+            </div>
+            <div>
+              <label className="form-label">Image URL</label>
+              <input
+                className="form-control"
+                type="url"
+                required
+                name="image"
+                value={product.image}
+                onChange={updateHandler}
+              />
+            </div>
+            <div>
+              <label className="form-label">Or Upload Image</label>
+              <input className="form-control" type="file" accept="image/*" onChange={handleImageFileChange} />
+            </div>
+            <div>
+              <label className="form-label">Price</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                name="price"
+                value={product.price}
+                onChange={updateHandler}
+              />
+            </div>
+            <div>
+              <label className="form-label">Quantity</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                required
+                name="qty"
+                value={product.qty}
+                onChange={updateHandler}
+              />
+            </div>
+            <div>
+              <label className="form-label">Description</label>
+              <textarea
+                className="form-control"
+                rows="4"
+                required
+                name="info"
+                value={product.info}
+                onChange={updateHandler}
+              />
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Save Changes'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
-  </div>
-  )
-}
+  );
+};
 
-export default UpdateProduct
+export default UpdateProduct;

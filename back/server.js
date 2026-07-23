@@ -57,7 +57,6 @@ app.use((err, request, response, next) => {
     response.status(err.status || 500).json({
         msg: err.message || 'Internal server error'
     });
-    next();
 });
 
 app.listen(port, hostname, () => {
