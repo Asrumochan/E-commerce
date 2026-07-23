@@ -133,7 +133,7 @@ const Admin = () => {
   }
 
   return (
-    <div className='pt-2'>
+    <div className='pt-2 page-shell'>
       <div className="page-header">
         <h1 className="page-title">Admin Console</h1>
         <p className="page-subtitle">Operational visibility, inventory controls, and reliable edit workflows.</p>
@@ -141,7 +141,7 @@ const Admin = () => {
 
       {error && <div className="status-card status-error">{error}</div>}
 
-      <div className="toolbar-card admin-toolbar">
+      <div className="toolbar-card elevated-card admin-toolbar">
         <div>
           <label className="form-label">Search</label>
           <input
@@ -185,7 +185,7 @@ const Admin = () => {
 
       <div className="result-chip">Showing {visibleProducts.length} products</div>
 
-      <div className="table-card">
+      <div className="table-card elevated-card">
         <div className="table-responsive">
             <table className='table table-striped align-middle'>
               <thead>

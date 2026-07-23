@@ -2,7 +2,7 @@ import React from 'react';
 
 const OrderHistoryPage = ({ orders = [] }) => {
   return (
-    <section>
+    <section className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Order History</h1>
         <p className="page-subtitle">All orders placed from your account are stored and shown here.</p>
@@ -13,7 +13,7 @@ const OrderHistoryPage = ({ orders = [] }) => {
       {!!orders.length && (
         <div className="order-grid">
           {orders.map((order) => (
-            <article className="order-card" key={order._id}>
+            <article className="order-card card-tilt" key={order._id}>
               <div className="order-card-head">
                 <h4>Order #{String(order._id).slice(-6).toUpperCase()}</h4>
                 <span className="order-status">{order.status}</span>

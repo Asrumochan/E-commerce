@@ -70,13 +70,13 @@ const Products = ({ onAddToCart, onToggleWishlist, isWishlisted }) => {
   };
 
   return (
-    <section>
+    <section className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Product Catalog</h1>
         <p className="page-subtitle">Curated inventory with live controls and performance-ready paging.</p>
       </div>
 
-      <div className="toolbar-card">
+      <div className="toolbar-card elevated-card">
         <form className="row g-3 align-items-end" onSubmit={submitSearch}>
           <div className="col-lg-4">
             <label className="form-label">Search</label>
@@ -168,7 +168,7 @@ const Products = ({ onAddToCart, onToggleWishlist, isWishlisted }) => {
             {products.map((product) => {
               return (
                 <div className="col-sm-6 col-lg-3" key={product._id}>
-                  <article className="product-card">
+                  <article className="product-card card-tilt">
                     <img
                       src={product.image}
                       onError={imgHandler}

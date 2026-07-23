@@ -192,6 +192,9 @@ const App = () => {
 
   return (
     <Router>
+      <div className="ambient-orb orb-a" />
+      <div className="ambient-orb orb-b" />
+      <div className="ambient-grid" />
       <nav className="app-nav">
         <div className="brand-area">
           <Link to="/" className="brand-link">
@@ -251,7 +254,7 @@ const App = () => {
 
       {notification && <div className="toast-note">{notification}</div>}
 
-      <main className="app-main container-fluid">
+      <main className="app-main app-main-elevated container-fluid">
         <Routes>
           <Route path="/" element={<HomePage isLoggedIn={!!authUser} />} />
           <Route path="/home" element={<Navigate to="/" replace />} />

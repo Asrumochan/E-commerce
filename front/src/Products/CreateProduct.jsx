@@ -130,9 +130,9 @@ const CreateProduct = () => {
   };
 
   return (
-    <div className="row justify-content-center">
+    <div className="row justify-content-center page-shell">
       <div className="col-lg-8">
-        <div className="form-shell">
+        <div className="form-shell elevated-card">
           <h1 className="page-title">Create Product</h1>
           <p className="page-subtitle">Add complete product details and push it to inventory.</p>
 

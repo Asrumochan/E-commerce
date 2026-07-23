@@ -9,6 +9,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isLoggedIn) {
     return <Navigate to="/products" replace />;
@@ -49,44 +50,68 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
 
   return (
     <section className="auth-wrap">
-      <div className="auth-card">
-        <h1 className="page-title">Login</h1>
-        <p className="page-subtitle">Sign in and continue managing your commerce space.</p>
+      <div className="auth-card auth-card-wide">
+        <div className="auth-highlight-panel">
+          <p className="hero-eyebrow">Secure Access</p>
+          <h2 className="auth-panel-title">Welcome back to TerraShop</h2>
+          <p className="auth-panel-text">
+            Sign in to continue with your personalized cart, wishlist, order history, and role-based dashboard.
+          </p>
+          <ul className="auth-benefits">
+            <li>Personal cart and wishlist synced to your account</li>
+            <li>Order history saved with complete pricing breakdown</li>
+            <li>Admin controls automatically enabled by role</li>
+          </ul>
+        </div>
 
-        {error && <div className="status-card status-error">{error}</div>}
+        <div className="auth-form-panel">
+          <h1 className="page-title">Login</h1>
+          <p className="page-subtitle">Sign in and continue managing your commerce space.</p>
 
-        <form className="form-grid" onSubmit={onSubmit}>
-          <div>
-            <label className="form-label">Email</label>
-            <input
-              className="form-control"
-              type="email"
-              name="email"
-              value={credentials.email}
-              onChange={onChange}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="form-label">Password</label>
-            <input
-              className="form-control"
-              type="password"
-              name="password"
-              value={credentials.password}
-              onChange={onChange}
-              placeholder="Minimum 6 characters"
-              required
-            />
-          </div>
-          <button className="btn btn-primary" type="submit" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Login'}
-          </button>
-        </form>
-        <p className="auth-switch-text">
-          No account yet? <Link to="/signup">Create one</Link>
-        </p>
+          {error && <div className="status-card status-error">{error}</div>}
+
+          <form className="form-grid" onSubmit={onSubmit}>
+            <div>
+              <label className="form-label">Email</label>
+              <input
+                className="form-control"
+                type="email"
+                name="email"
+                value={credentials.email}
+                onChange={onChange}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div>
+              <label className="form-label">Password</label>
+              <div className="password-field-wrap">
+                <input
+                  className="form-control"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={credentials.password}
+                  onChange={onChange}
+                  placeholder="Minimum 6 characters"
+                  required
+                />
+                <button
+                  className="password-toggle-btn"
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <button className="btn btn-primary auth-submit-btn" type="submit" disabled={submitting}>
+              {submitting ? 'Signing in...' : 'Login'}
+            </button>
+          </form>
+          <p className="auth-switch-text">
+            No account yet? <Link to="/signup">Create one</Link>
+          </p>
+        </div>
       </div>
     </section>
   );

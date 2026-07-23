@@ -76,9 +76,9 @@ const UpdateProduct = () => {
   }
 
   return (
-    <div className="row justify-content-center">
+    <div className="row justify-content-center page-shell">
       <div className="col-lg-8">
-        <div className="form-shell">
+        <div className="form-shell elevated-card">
           <h1 className="page-title">Update Product</h1>
           <p className="page-subtitle">Keep your inventory information accurate and up to date.</p>
 

@@ -9,7 +9,7 @@ const Wishlist = ({ items = [], onAddToCart, onToggleWishlist }) => {
   };
 
   return (
-    <section>
+    <section className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Wishlist</h1>
         <p className="page-subtitle">Save products you want to track or purchase later.</p>
@@ -22,7 +22,7 @@ const Wishlist = ({ items = [], onAddToCart, onToggleWishlist }) => {
           {items.map((product) => {
             return (
               <div className="col-sm-6 col-lg-3" key={product._id}>
-                <article className="product-card">
+                <article className="product-card card-tilt">
                   <img src={product.image} onError={imgHandler} alt={product.name} className="product-image" />
                   <div className="product-content">
                     <h3 className="product-title">{product.name}</h3>

@@ -61,7 +61,7 @@ const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear, onPla
   };
 
   return (
-    <section>
+    <section className="page-shell">
       <div className="page-header">
         <h1 className="page-title">Cart</h1>
         <p className="page-subtitle">Review, adjust quantities, and confirm your order.</p>
@@ -78,7 +78,7 @@ const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear, onPla
       {!cartItems.length && <div className="status-card">No items in cart yet.</div>}
 
       {!!cartItems.length && (
-        <div className="table-card">
+        <div className="table-card elevated-card">
           <div className="table-responsive">
             <table className="table align-middle">
               <thead>
