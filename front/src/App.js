@@ -11,22 +11,13 @@ import Wishlist from './Products/Wishlist';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import { apiClient } from './api/client';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import { apiClient, extractErrorMessage } from './api/client';
 import './styles.css';
 
 const App = () => {
-  const [cartItems, setCartItems] = useState(() => {
-    const saved = localStorage.getItem('cartItems');
-    if (!saved) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return [];
-    }
-  });
+  const [cartItems, setCartItems] = useState([]);
+  const [orderHistory, setOrderHistory] = useState([]);
   const [wishlistItems, setWishlistItems] = useState(() => {
     const saved = localStorage.getItem('wishlistItems');
     if (!saved) {
@@ -54,10 +45,6 @@ const App = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem('cartItems', JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  useEffect(() => {
     localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
   }, [wishlistItems]);
 
@@ -65,11 +52,28 @@ const App = () => {
     if (!authUser) {
       localStorage.removeItem('authUser');
       delete apiClient.defaults.headers.common['x-user-id'];
+      setCartItems([]);
+      setOrderHistory([]);
       return;
     }
 
     localStorage.setItem('authUser', JSON.stringify(authUser));
     apiClient.defaults.headers.common['x-user-id'] = authUser.id;
+
+    const fetchUserData = async () => {
+      try {
+        const [cartResponse, ordersResponse] = await Promise.all([
+          apiClient.get('/cart'),
+          apiClient.get('/orders')
+        ]);
+        setCartItems(cartResponse.data.items || []);
+        setOrderHistory(ordersResponse.data.data || []);
+      } catch (err) {
+        setNotification(extractErrorMessage(err, 'Unable to sync user cart/orders'));
+      }
+    };
+
+    fetchUserData();
   }, [authUser]);
 
   useEffect(() => {
@@ -88,17 +92,20 @@ const App = () => {
   const isAdmin = authUser?.role === 'admin';
 
   const addToCart = (product) => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item._id === product._id);
-      if (existing) {
-        return prev.map((item) =>
-          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
+    if (!authUser) {
+      setNotification('Please login to add items to cart');
+      return;
+    }
 
-      return [...prev, { ...product, quantity: 1 }];
-    });
-    setNotification(`${product.name} added to cart`);
+    apiClient
+      .post('/cart/items', { productId: product._id, quantity: 1 })
+      .then((response) => {
+        setCartItems(response.data.items || []);
+        setNotification(`${product.name} added to cart`);
+      })
+      .catch((err) => {
+        setNotification(extractErrorMessage(err, 'Unable to add item to cart'));
+      });
   };
 
   const isWishlisted = (productId) => wishlistItems.some((item) => item._id === productId);
@@ -114,22 +121,46 @@ const App = () => {
     });
   };
 
-  const updateCartQuantity = (productId, delta) => {
-    setCartItems((prev) =>
-      prev
-        .map((item) =>
-          item._id === productId ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+  const updateCartQuantity = async (productId, delta) => {
+    const target = cartItems.find((item) => item._id === productId);
+    if (!target) {
+      return;
+    }
+
+    const nextQty = Math.max(1, Number(target.quantity) + delta);
+    try {
+      const response = await apiClient.put(`/cart/items/${productId}`, { quantity: nextQty });
+      setCartItems(response.data.items || []);
+    } catch (err) {
+      setNotification(extractErrorMessage(err, 'Unable to update cart item'));
+    }
   };
 
-  const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item._id !== productId));
+  const removeFromCart = async (productId) => {
+    try {
+      const response = await apiClient.delete(`/cart/items/${productId}`);
+      setCartItems(response.data.items || []);
+    } catch (err) {
+      setNotification(extractErrorMessage(err, 'Unable to remove cart item'));
+    }
   };
 
-  const clearCart = () => {
-    setCartItems([]);
+  const clearCart = async () => {
+    try {
+      const response = await apiClient.delete('/cart');
+      setCartItems(response.data.items || []);
+    } catch (err) {
+      setNotification(extractErrorMessage(err, 'Unable to clear cart'));
+    }
+  };
+
+  const placeOrder = async (couponCode) => {
+    const response = await apiClient.post('/orders/checkout', { couponCode: couponCode || '' });
+    setCartItems(response.data.cart?.items || []);
+    if (response.data.order) {
+      setOrderHistory((prev) => [response.data.order, ...prev]);
+    }
+    return response.data;
   };
 
   const loginUser = (userProfile) => {
@@ -139,6 +170,7 @@ const App = () => {
 
   const logoutUser = () => {
     setAuthUser(null);
+    setWishlistItems([]);
     setNotification('Logged out successfully');
   };
 
@@ -179,6 +211,9 @@ const App = () => {
           </Link>
           <Link className="nav-link-item" to="/wishlist">
             Wishlist
+          </Link>
+          <Link className="nav-link-item" to="/orders">
+            Orders
           </Link>
           {isAdmin && (
             <>
@@ -275,7 +310,16 @@ const App = () => {
                   onDecrease={(id) => updateCartQuantity(id, -1)}
                   onRemove={removeFromCart}
                   onClear={clearCart}
+                  onPlaceOrder={placeOrder}
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrderHistoryPage orders={orderHistory} />
               </ProtectedRoute>
             }
           />

@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
+import { extractErrorMessage } from '../api/client';
 
-const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear }) => {
+const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear, onPlaceOrder }) => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponMessage, setCouponMessage] = useState('');
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   const total = useMemo(() => {
     return cartItems.reduce((acc, product) => acc + Number(product.price) * Number(product.quantity), 0);
@@ -37,15 +40,24 @@ const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear }) => 
     setCouponMessage('Invalid coupon code');
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!cartItems.length) {
       return;
     }
-    setOrderPlaced(true);
-    setCoupon('');
-    setCouponApplied(false);
-    setCouponMessage('');
-    onClear();
+
+    setOrderError('');
+    setPlacingOrder(true);
+    try {
+      await onPlaceOrder(couponApplied ? coupon : '');
+      setOrderPlaced(true);
+      setCoupon('');
+      setCouponApplied(false);
+      setCouponMessage('');
+    } catch (err) {
+      setOrderError(extractErrorMessage(err, 'Unable to place order'));
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   return (
@@ -60,6 +72,8 @@ const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear }) => 
           Order placed successfully. Your cart is now empty.
         </div>
       )}
+
+      {orderError && <div className="status-card status-error">{orderError}</div>}
 
       {!cartItems.length && <div className="status-card">No items in cart yet.</div>}
 
@@ -133,8 +147,8 @@ const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear }) => 
               <button className="btn btn-outline-secondary" onClick={onClear}>
                 Clear Cart
               </button>
-              <button className="btn btn-info text-white" onClick={placeOrder}>
-                Place Order
+              <button className="btn btn-info text-white" onClick={placeOrder} disabled={placingOrder}>
+                {placingOrder ? 'Placing...' : 'Place Order'}
               </button>
             </div>
           </div>

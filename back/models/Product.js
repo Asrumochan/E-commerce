@@ -30,6 +30,16 @@ let ProductSchema = new mongoose.Schema({
         trim: true,
         minlength: [5, 'Product description must be at least 5 characters'],
         maxlength: [1000, 'Product description must be at most 1000 characters']
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user',
+        default: null
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user',
+        default: null
     }
 }, {
     timestamps: true

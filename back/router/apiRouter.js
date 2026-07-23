@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Cart = require('../models/Cart');
+const Order = require('../models/Order');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 8;
@@ -76,6 +78,27 @@ const getAuthenticatedUser = async (request) => {
     return User.findById(userId);
 };
 
+const requireAuth = async (request, response, next) => {
+    try {
+        const user = await getAuthenticatedUser(request);
+
+        if (!user) {
+            return response.status(401).json({
+                msg: 'Authentication required'
+            });
+        }
+
+        request.authUser = user;
+        return next();
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+};
+
 const requireAdmin = async (request, response, next) => {
     try {
         const user = await getAuthenticatedUser(request);
@@ -101,6 +124,54 @@ const requireAdmin = async (request, response, next) => {
             msg: err.message
         });
     }
+};
+
+const getOrCreateCart = async (userId) => {
+    let cart = await Cart.findOne({ user: userId }).populate('items.product');
+    if (!cart) {
+        cart = await Cart.create({ user: userId, items: [] });
+        cart = await Cart.findById(cart._id).populate('items.product');
+    }
+    return cart;
+};
+
+const formatCartResponse = (cartDoc) => {
+    const items = (cartDoc.items || [])
+        .filter((item) => item.product)
+        .map((item) => ({
+            _id: item.product._id,
+            productId: item.product._id,
+            name: item.product.name,
+            image: item.product.image,
+            price: item.product.price,
+            stockQty: item.product.qty,
+            quantity: item.quantity,
+            lineTotal: Number(item.product.price) * Number(item.quantity)
+        }));
+
+    return {
+        items,
+        totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+        subtotal: items.reduce((sum, item) => sum + item.lineTotal, 0)
+    };
+};
+
+const calculateTotals = (subtotal, couponCode) => {
+    const normalizedCoupon = String(couponCode || '').trim().toUpperCase();
+    const discount = normalizedCoupon === 'TERRAZZO10' ? subtotal * 0.1 : 0;
+    const taxableAmount = Math.max(0, subtotal - discount);
+    const tax = taxableAmount * 0.05;
+    const shipping = taxableAmount > 1000 || taxableAmount === 0 ? 0 : 75;
+    const grandTotal = taxableAmount + tax + shipping;
+
+    return {
+        subtotal,
+        discount,
+        tax,
+        shipping,
+        grandTotal,
+        couponCode: normalizedCoupon
+    };
 };
 
 router.post('/auth/signup', async (request, response) => {
@@ -216,6 +287,221 @@ router.post('/auth/login', async (request, response) => {
     }
 });
 
+router.get('/cart', requireAuth, async (request, response) => {
+    try {
+        const cart = await getOrCreateCart(request.authUser._id);
+        return response.status(200).json(formatCartResponse(cart));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.post('/cart/items', requireAuth, async (request, response) => {
+    try {
+        const productId = request.body.productId;
+        const addQuantity = Number(request.body.quantity || 1);
+
+        if (!validateObjectId(productId)) {
+            return response.status(400).json({
+                msg: 'Invalid product id'
+            });
+        }
+
+        if (!Number.isInteger(addQuantity) || addQuantity < 1) {
+            return response.status(400).json({
+                msg: 'Quantity must be a positive whole number'
+            });
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return response.status(404).json({
+                msg: 'No Product Found'
+            });
+        }
+
+        const cart = await getOrCreateCart(request.authUser._id);
+        const existingIndex = cart.items.findIndex((item) => String(item.product._id || item.product) === String(productId));
+
+        if (existingIndex >= 0) {
+            const nextQty = cart.items[existingIndex].quantity + addQuantity;
+            cart.items[existingIndex].quantity = nextQty;
+        } else {
+            cart.items.push({ product: productId, quantity: addQuantity });
+        }
+
+        await cart.save();
+        const refreshed = await Cart.findById(cart._id).populate('items.product');
+        return response.status(200).json(formatCartResponse(refreshed));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.put('/cart/items/:productId', requireAuth, async (request, response) => {
+    try {
+        const productId = request.params.productId;
+        const quantity = Number(request.body.quantity);
+
+        if (!validateObjectId(productId)) {
+            return response.status(400).json({
+                msg: 'Invalid product id'
+            });
+        }
+
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            return response.status(400).json({
+                msg: 'Quantity must be a positive whole number'
+            });
+        }
+
+        const cart = await getOrCreateCart(request.authUser._id);
+        const item = cart.items.find((entry) => String(entry.product._id || entry.product) === String(productId));
+        if (!item) {
+            return response.status(404).json({
+                msg: 'Item not found in cart'
+            });
+        }
+
+        item.quantity = quantity;
+        await cart.save();
+        const refreshed = await Cart.findById(cart._id).populate('items.product');
+        return response.status(200).json(formatCartResponse(refreshed));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.delete('/cart/items/:productId', requireAuth, async (request, response) => {
+    try {
+        const productId = request.params.productId;
+        if (!validateObjectId(productId)) {
+            return response.status(400).json({
+                msg: 'Invalid product id'
+            });
+        }
+
+        const cart = await getOrCreateCart(request.authUser._id);
+        cart.items = cart.items.filter((entry) => String(entry.product._id || entry.product) !== String(productId));
+        await cart.save();
+        const refreshed = await Cart.findById(cart._id).populate('items.product');
+        return response.status(200).json(formatCartResponse(refreshed));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.delete('/cart', requireAuth, async (request, response) => {
+    try {
+        const cart = await getOrCreateCart(request.authUser._id);
+        cart.items = [];
+        await cart.save();
+        return response.status(200).json(formatCartResponse(cart));
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.get('/orders', requireAuth, async (request, response) => {
+    try {
+        const orders = await Order.find({ user: request.authUser._id }).sort({ createdAt: -1 });
+        return response.status(200).json({ data: orders });
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
+router.post('/orders/checkout', requireAuth, async (request, response) => {
+    try {
+        const cart = await getOrCreateCart(request.authUser._id);
+        const cartItems = (cart.items || []).filter((item) => item.product);
+
+        if (!cartItems.length) {
+            return response.status(400).json({
+                msg: 'Cart is empty'
+            });
+        }
+
+        for (const item of cartItems) {
+            if (item.product.qty < item.quantity) {
+                return response.status(400).json({
+                    msg: `Insufficient stock for ${item.product.name}`
+                });
+            }
+        }
+
+        const orderItems = cartItems.map((item) => ({
+            product: item.product._id,
+            name: item.product.name,
+            image: item.product.image,
+            price: Number(item.product.price),
+            quantity: Number(item.quantity),
+            lineTotal: Number(item.product.price) * Number(item.quantity)
+        }));
+
+        const subtotal = orderItems.reduce((sum, item) => sum + item.lineTotal, 0);
+        const totals = calculateTotals(subtotal, request.body.couponCode || '');
+
+        for (const item of cartItems) {
+            item.product.qty = Number(item.product.qty) - Number(item.quantity);
+            await item.product.save();
+        }
+
+        const order = await Order.create({
+            user: request.authUser._id,
+            items: orderItems,
+            totals: {
+                subtotal: totals.subtotal,
+                discount: totals.discount,
+                tax: totals.tax,
+                shipping: totals.shipping,
+                grandTotal: totals.grandTotal
+            },
+            couponCode: totals.couponCode,
+            status: 'placed'
+        });
+
+        cart.items = [];
+        await cart.save();
+
+        return response.status(201).json({
+            msg: 'Order placed successfully',
+            order,
+            cart: formatCartResponse(cart)
+        });
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+});
+
 /*
     USAGE : Get all the products
     URL : http://127.0.0.1:5000/api/products
@@ -247,6 +533,19 @@ router.get('/products', async (request , response) => {
         console.error(err);
         response.status(500).json({
             msg : err.message
+        });
+    }
+});
+
+router.get('/products/mine/listed', requireAdmin, async (request, response) => {
+    try {
+        const products = await Product.find({ createdBy: request.authUser._id }).sort({ createdAt: -1 });
+        response.status(200).json({ data: products });
+    }
+    catch (err) {
+        console.error(err);
+        response.status(500).json({
+            msg: err.message
         });
     }
 });
@@ -337,7 +636,11 @@ router.post('/products', requireAdmin, async (request , response) => {
                 msg : 'Product is Already Exists'
             })
         }
-        product = new Product(newProduct);
+        product = new Product({
+            ...newProduct,
+            createdBy: request.authUser._id,
+            updatedBy: request.authUser._id
+        });
         product = await product.save(); // insert the product to database
         response.status(201).json({
             result : 'Product is Created',
@@ -396,7 +699,10 @@ router.put('/products/:id', requireAdmin, async (request , response) => {
 
         // update
         product = await Product.findByIdAndUpdate(productId , {
-            $set : updatedProduct
+            $set : {
+                ...updatedProduct,
+                updatedBy: request.authUser._id
+            }
         }, { new : true, runValidators: true});
         response.status(200).json({
             result : 'Product is Updated',
