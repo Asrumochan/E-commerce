@@ -7,7 +7,8 @@ const SignupPage = ({ onSignup, isLoggedIn }) => {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    adminAccessCode: ''
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +49,8 @@ const SignupPage = ({ onSignup, isLoggedIn }) => {
       const response = await apiClient.post('/auth/signup', {
         name,
         email,
-        password: form.password
+        password: form.password,
+        adminAccessCode: form.adminAccessCode.trim()
       });
       onSignup(response.data.user);
     } catch (err) {
@@ -113,6 +115,17 @@ const SignupPage = ({ onSignup, isLoggedIn }) => {
               onChange={onChange}
               placeholder="Repeat password"
               required
+            />
+          </div>
+          <div>
+            <label className="form-label">Admin Access Code (optional)</label>
+            <input
+              className="form-control"
+              type="password"
+              name="adminAccessCode"
+              value={form.adminAccessCode}
+              onChange={onChange}
+              placeholder="Only for authorized admins"
             />
           </div>
           <button className="btn btn-primary" type="submit" disabled={submitting}>

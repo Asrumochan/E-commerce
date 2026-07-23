@@ -61,14 +61,51 @@ const sanitizeProductPayload = (body) => ({
 const sanitizeUserPayload = (body) => ({
     name: typeof body.name === 'string' ? body.name.trim() : '',
     email: typeof body.email === 'string' ? body.email.trim().toLowerCase() : '',
-    password: typeof body.password === 'string' ? body.password : ''
+    password: typeof body.password === 'string' ? body.password : '',
+    adminAccessCode: typeof body.adminAccessCode === 'string' ? body.adminAccessCode.trim() : ''
 });
 
 const validateObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const getAuthenticatedUser = async (request) => {
+    const userId = request.header('x-user-id');
+    if (!userId || !validateObjectId(userId)) {
+        return null;
+    }
+
+    return User.findById(userId);
+};
+
+const requireAdmin = async (request, response, next) => {
+    try {
+        const user = await getAuthenticatedUser(request);
+
+        if (!user) {
+            return response.status(401).json({
+                msg: 'Authentication required'
+            });
+        }
+
+        if (user.role !== 'admin') {
+            return response.status(403).json({
+                msg: 'Admin access required'
+            });
+        }
+
+        request.authUser = user;
+        return next();
+    }
+    catch (err) {
+        console.error(err);
+        return response.status(500).json({
+            msg: err.message
+        });
+    }
+};
+
 router.post('/auth/signup', async (request, response) => {
     try {
-        const { name, email, password } = sanitizeUserPayload(request.body);
+        const { name, email, password, adminAccessCode } = sanitizeUserPayload(request.body);
 
         if (!name || !email || !password) {
             return response.status(400).json({
@@ -89,12 +126,32 @@ router.post('/auth/signup', async (request, response) => {
             });
         }
 
+        const adminCode = process.env.ADMIN_ACCESS_CODE;
+        let role = 'customer';
+
+        if (adminAccessCode) {
+            if (!adminCode) {
+                return response.status(403).json({
+                    msg: 'Admin signup is not enabled on this server'
+                });
+            }
+
+            if (adminAccessCode !== adminCode) {
+                return response.status(403).json({
+                    msg: 'Invalid admin access code'
+                });
+            }
+
+            role = 'admin';
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role
         });
 
         return response.status(201).json({
@@ -103,6 +160,7 @@ router.post('/auth/signup', async (request, response) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
                 loggedInAt: new Date().toISOString()
             }
         });
@@ -145,6 +203,7 @@ router.post('/auth/login', async (request, response) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
                 loggedInAt: new Date().toISOString()
             }
         });
@@ -198,7 +257,7 @@ router.get('/products', async (request , response) => {
     Method : GET
     Fields : no-fields
  */
-router.get('/products/analytics/summary', async (request, response) => {
+router.get('/products/analytics/summary', requireAdmin, async (request, response) => {
     try {
         const [summary] = await Product.aggregate([
             {
@@ -261,7 +320,7 @@ router.get('/products/analytics/summary', async (request, response) => {
     Method : POST
     Fields : name , image , price , qty , info
  */
-router.post('/products', async (request , response) => {
+router.post('/products', requireAdmin, async (request , response) => {
     try {
         let newProduct = sanitizeProductPayload(request.body);
 
@@ -299,7 +358,7 @@ router.post('/products', async (request , response) => {
     Method : PUT
     Fields : name , image , price , qty , info
  */
-router.put('/products/:id', async (request , response) => {
+router.put('/products/:id', requireAdmin, async (request , response) => {
     let productId = request.params.id;
     try {
         if (!validateObjectId(productId)) {
@@ -358,7 +417,7 @@ router.put('/products/:id', async (request , response) => {
     Method : DELETE
     Fields : no-fields
  */
-router.delete('/products/:id', async (request, response) => {
+router.delete('/products/:id', requireAdmin, async (request, response) => {
     try{
         let productId = request.params.id;
         if (!validateObjectId(productId)) {

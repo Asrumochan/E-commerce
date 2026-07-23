@@ -11,6 +11,7 @@ import Wishlist from './Products/Wishlist';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import { apiClient } from './api/client';
 import './styles.css';
 
 const App = () => {
@@ -63,10 +64,12 @@ const App = () => {
   useEffect(() => {
     if (!authUser) {
       localStorage.removeItem('authUser');
+      delete apiClient.defaults.headers.common['x-user-id'];
       return;
     }
 
     localStorage.setItem('authUser', JSON.stringify(authUser));
+    apiClient.defaults.headers.common['x-user-id'] = authUser.id;
   }, [authUser]);
 
   useEffect(() => {
@@ -82,6 +85,7 @@ const App = () => {
     [cartItems]
   );
   const wishlistCount = useMemo(() => wishlistItems.length, [wishlistItems]);
+  const isAdmin = authUser?.role === 'admin';
 
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -145,6 +149,18 @@ const App = () => {
     return children;
   };
 
+  const ProtectedAdminRoute = ({ children }) => {
+    if (!authUser) {
+      return <Navigate to="/login" replace />;
+    }
+
+    if (authUser.role !== 'admin') {
+      return <Navigate to="/products" replace />;
+    }
+
+    return children;
+  };
+
   return (
     <Router>
       <nav className="app-nav">
@@ -164,12 +180,16 @@ const App = () => {
           <Link className="nav-link-item" to="/wishlist">
             Wishlist
           </Link>
-          <Link className="nav-link-item" to="/create">
-            New Product
-          </Link>
-          <Link className="nav-link-item" to="/admin">
-            Admin
-          </Link>
+          {isAdmin && (
+            <>
+              <Link className="nav-link-item" to="/create">
+                New Product
+              </Link>
+              <Link className="nav-link-item" to="/admin">
+                Admin
+              </Link>
+            </>
+          )}
         </div>
         {!authUser ? (
           <div className="auth-links-wrap">
@@ -184,7 +204,7 @@ const App = () => {
         ) : (
           <button className="auth-pill logout" type="button" onClick={logoutUser}>
             <FontAwesomeIcon icon={faRightFromBracket} />
-            <span>{authUser.name}</span>
+            <span>{authUser.name} ({authUser.role})</span>
           </button>
         )}
         <Link to="/cart" className="cart-pill" aria-label="Open cart">
@@ -224,25 +244,25 @@ const App = () => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <Admin />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             }
           />
           <Route
             path="/create"
             element={
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <CreateProduct />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             }
           />
           <Route
             path="/update/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <UpdateProduct />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             }
           />
           <Route
