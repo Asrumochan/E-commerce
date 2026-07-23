@@ -1,91 +1,99 @@
-import Axios from 'axios';
-import React, { useEffect, useState,useReducer } from 'react'
+import React, { useMemo, useState } from 'react';
 
-const Cart = ({selectedProductId=[]}) => {
-  const [products,setProducts]=useState([])
-  const increaseQuantity=(id)=>{
-      let selectedProduct=products.find((prod)=>{
-        return prod._id===id ;
-      })
-      const updatedProducts = products.map((prod) => {
-        if (prod._id === id) {
-            return { ...prod, qty: prod.qty + 1 }; 
-        }
-        return prod; 
-    });
-    setProducts(updatedProducts);
-  }
-  const decreaseQuantity=(id)=>{
-      let selectedProduct=products.find((prod)=>{
-        return prod._id===id ;
-      })
-      const updatedProducts = products.map((prod) => {
-        if (prod._id === id) {
-            return { ...prod, qty: prod.qty - 1 }; 
-        }
-        return prod; 
-    });
-    setProducts(updatedProducts);
-  }
-  const getData=(id)=>{
-    Axios.get(`http://127.0.0.1:5000/api/products/${id}`)
-    .then((res)=>{
-      setProducts((prev)=>[...prev,res.data])
-     })
-    .catch()
-  }
-  useEffect(()=>{
-    selectedProductId.forEach(element => {
-      getData(element)
-    });
-  },[]);
-  const total = products.reduce((acc, product) => {
-    return acc + product.price * product.qty;
-  },0);
-  const imgHandler=(evt)=>{
-    evt.target.src="https://media.istockphoto.com/id/1318420912/vector/mock-up-screen-phone.jpg?s=612x612&w=0&k=20&c=z7RTcOE_vnT9eRcSEQhw0EVVRDb9JdDPaApfyO5nFxM="
-   }
+const Cart = ({ cartItems = [], onIncrease, onDecrease, onRemove, onClear }) => {
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  const total = useMemo(() => {
+    return cartItems.reduce((acc, product) => acc + Number(product.price) * Number(product.quantity), 0);
+  }, [cartItems]);
+
+  const totalItems = useMemo(() => {
+    return cartItems.reduce((acc, product) => acc + Number(product.quantity), 0);
+  }, [cartItems]);
+
+  const placeOrder = () => {
+    if (!cartItems.length) {
+      return;
+    }
+    setOrderPlaced(true);
+    onClear();
+  };
+
   return (
-    <div className='container mt-5'>
-      <div className="row">
-        <div className="col-10">
-        <table className='table'>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Image</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Total_Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {
-                products.map((product)=>{
-                  let flag;
-                  if(product.qty===1 ){
-                     flag = true;
-                  }
-                  else{
-                    flag=false;
-                  }
-                  return <tr key={product._id}>
-                          <td>{product.name}</td>
-                          <td><img src={product.image} onError={imgHandler} height='50px' alt="" /></td>
-                          <td>{product.price}</td>
-                          <td><button className='btn btn-secondary' disabled={flag} onClick={()=>decreaseQuantity(product._id)}>-</button> {product.qty} <button className='btn btn-secondary' onClick={()=>increaseQuantity(product._id)}>+</button> </td>
-                          <td>{product.price*product.qty}</td>
-                  </tr>
-                })
-              }
-            </tbody>
-        </table>
-        </div>
+    <section>
+      <div className="page-header">
+        <h1 className="page-title">Cart</h1>
+        <p className="page-subtitle">Review, adjust quantities, and confirm your order.</p>
       </div>
-        <h5>Total  Price: ₹{total}</h5>
-        <h1 className='btn btn-info'>Place Order</h1>  
-    </div>
-  )
-}
 
-export default Cart
+      {orderPlaced && (
+        <div className="status-card status-success">
+          Order placed successfully. Your cart is now empty.
+        </div>
+      )}
+
+      {!cartItems.length && <div className="status-card">No items in cart yet.</div>}
+
+      {!!cartItems.length && (
+        <div className="table-card">
+          <div className="table-responsive">
+            <table className="table align-middle">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cartItems.map((product) => {
+                  const itemTotal = Number(product.price) * Number(product.quantity);
+                  return (
+                    <tr key={product._id}>
+                      <td>{product.name}</td>
+                      <td>INR {product.price}</td>
+                      <td>
+                        <button className="btn btn-secondary btn-sm" onClick={() => onDecrease(product._id)}>
+                          -
+                        </button>
+                        <span className="mx-2 fw-bold">{product.quantity}</span>
+                        <button className="btn btn-secondary btn-sm" onClick={() => onIncrease(product._id)}>
+                          +
+                        </button>
+                      </td>
+                      <td>INR {itemTotal.toFixed(2)}</td>
+                      <td>
+                        <button className="btn btn-outline-danger btn-sm" onClick={() => onRemove(product._id)}>
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="checkout-bar">
+            <div>
+              <h5 className="mb-1">Items: {totalItems}</h5>
+              <h4>Total: INR {total.toFixed(2)}</h4>
+            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-outline-secondary" onClick={onClear}>
+                Clear Cart
+              </button>
+              <button className="btn btn-info text-white" onClick={placeOrder}>
+                Place Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
+export default Cart;
