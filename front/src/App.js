@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import Products from './Products/Products';
 import Admin from './Products/Admin';
 import CreateProduct from './Products/CreateProduct';
 import UpdateProduct from './Products/UpdateProduct';
 import Cart from './Products/cart';
+import Wishlist from './Products/Wishlist';
 import './styles.css';
 
 const App = () => {
@@ -22,15 +23,41 @@ const App = () => {
       return [];
     }
   });
+  const [wishlistItems, setWishlistItems] = useState(() => {
+    const saved = localStorage.getItem('wishlistItems');
+    if (!saved) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return [];
+    }
+  });
+  const [notification, setNotification] = useState('');
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
+  useEffect(() => {
+    localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
+  }, [wishlistItems]);
+
+  useEffect(() => {
+    if (!notification) {
+      return;
+    }
+    const timer = setTimeout(() => setNotification(''), 1800);
+    return () => clearTimeout(timer);
+  }, [notification]);
+
   const cartCount = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems]
   );
+  const wishlistCount = useMemo(() => wishlistItems.length, [wishlistItems]);
 
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -42,6 +69,20 @@ const App = () => {
       }
 
       return [...prev, { ...product, quantity: 1 }];
+    });
+    setNotification(`${product.name} added to cart`);
+  };
+
+  const isWishlisted = (productId) => wishlistItems.some((item) => item._id === productId);
+
+  const toggleWishlist = (product) => {
+    setWishlistItems((prev) => {
+      if (prev.some((item) => item._id === product._id)) {
+        setNotification(`${product.name} removed from wishlist`);
+        return prev.filter((item) => item._id !== product._id);
+      }
+      setNotification(`${product.name} saved to wishlist`);
+      return [...prev, product];
     });
   };
 
@@ -76,6 +117,9 @@ const App = () => {
           <Link className="nav-link-item" to="/products">
             Products
           </Link>
+          <Link className="nav-link-item" to="/wishlist">
+            Wishlist
+          </Link>
           <Link className="nav-link-item" to="/create">
             New Product
           </Link>
@@ -87,12 +131,28 @@ const App = () => {
           <FontAwesomeIcon icon={faShoppingCart} />
           <span>{cartCount}</span>
         </Link>
+        <Link to="/wishlist" className="wishlist-pill" aria-label="Open wishlist">
+          <FontAwesomeIcon icon={faHeart} />
+          <span>{wishlistCount}</span>
+        </Link>
       </nav>
+
+      {notification && <div className="toast-note">{notification}</div>}
 
       <main className="app-main container-fluid">
         <Routes>
-          <Route path="/" element={<Products onAddToCart={addToCart} />} />
-          <Route path="/products" element={<Products onAddToCart={addToCart} />} />
+          <Route
+            path="/"
+            element={<Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />}
+          />
+          <Route
+            path="/products"
+            element={<Products onAddToCart={addToCart} onToggleWishlist={toggleWishlist} isWishlisted={isWishlisted} />}
+          />
+          <Route
+            path="/wishlist"
+            element={<Wishlist items={wishlistItems} onAddToCart={addToCart} onToggleWishlist={toggleWishlist} />}
+          />
           <Route path="/admin" element={<Admin />} />
           <Route path="/create" element={<CreateProduct />} />
           <Route path="/update/:id" element={<UpdateProduct />} />
@@ -108,8 +168,14 @@ const App = () => {
               />
             }
           />
+          <Route path="*" element={<div className="status-card status-error">Page not found</div>} />
         </Routes>
       </main>
+
+      <footer className="app-footer">
+        <p>TerraShop Commerce Suite</p>
+        <p>Inventory, Wishlist, Cart and Admin controls in one workflow.</p>
+      </footer>
     </Router>
   );
 };

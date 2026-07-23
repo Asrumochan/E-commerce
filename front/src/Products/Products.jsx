@@ -4,7 +4,7 @@ import { apiClient, extractErrorMessage } from '../api/client';
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&q=80';
 
-const Products = ({ onAddToCart }) => {
+const Products = ({ onAddToCart, onToggleWishlist, isWishlisted }) => {
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 8, totalPages: 1 });
   const [loading, setLoading] = useState(true);
@@ -15,6 +15,8 @@ const Products = ({ onAddToCart }) => {
   const [order, setOrder] = useState('desc');
   const [inStock, setInStock] = useState(false);
   const [page, setPage] = useState(1);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -27,7 +29,9 @@ const Products = ({ onAddToCart }) => {
           search: search || undefined,
           sortBy,
           order,
-          inStock
+          inStock,
+          minPrice: minPrice || undefined,
+          maxPrice: maxPrice || undefined
         }
       });
       setProducts(response.data.data || []);
@@ -42,7 +46,7 @@ const Products = ({ onAddToCart }) => {
 
   useEffect(() => {
     fetchProducts();
-  }, [search, sortBy, order, inStock, page]);
+  }, [search, sortBy, order, inStock, page, minPrice, maxPrice]);
 
   const imgHandler = (evt) => {
     evt.target.src = FALLBACK_IMAGE;
@@ -52,6 +56,17 @@ const Products = ({ onAddToCart }) => {
     evt.preventDefault();
     setPage(1);
     setSearch(searchInput.trim());
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setSearchInput('');
+    setSortBy('createdAt');
+    setOrder('desc');
+    setInStock(false);
+    setMinPrice('');
+    setMaxPrice('');
+    setPage(1);
   };
 
   return (
@@ -103,13 +118,46 @@ const Products = ({ onAddToCart }) => {
               In stock only
             </label>
           </div>
+          <div className="col-lg-1">
+            <label className="form-label">Min</label>
+            <input
+              className="form-control"
+              type="number"
+              min="0"
+              value={minPrice}
+              onChange={(e) => {
+                setPage(1);
+                setMinPrice(e.target.value);
+              }}
+            />
+          </div>
+          <div className="col-lg-1">
+            <label className="form-label">Max</label>
+            <input
+              className="form-control"
+              type="number"
+              min="0"
+              value={maxPrice}
+              onChange={(e) => {
+                setPage(1);
+                setMaxPrice(e.target.value);
+              }}
+            />
+          </div>
           <div className="col-lg-2">
             <button className="btn btn-primary w-100" type="submit">
               Apply
             </button>
           </div>
+          <div className="col-lg-2">
+            <button className="btn btn-outline-dark w-100" type="button" onClick={resetFilters}>
+              Reset
+            </button>
+          </div>
         </form>
       </div>
+
+      {!loading && !error && <div className="result-chip">{meta.total} products found</div>}
 
       {loading && <div className="status-card">Loading products...</div>}
       {!loading && error && <div className="status-card status-error">{error}</div>}
@@ -143,6 +191,13 @@ const Products = ({ onAddToCart }) => {
                         onClick={() => onAddToCart(product)}
                       >
                         Add to Cart
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn w-100 mt-2 ${isWishlisted(product._id) ? 'btn-warning' : 'btn-outline-warning'}`}
+                        onClick={() => onToggleWishlist(product)}
+                      >
+                        {isWishlisted(product._id) ? 'Wishlisted' : 'Save to Wishlist'}
                       </button>
                     </div>
                   </article>
