@@ -6,19 +6,24 @@ This frontend is configured to publish at:
 
 - https://asrumochan.github.io/E-commerce
 
-Automatic deployment is configured through:
-
-- .github/workflows/deploy-gh-pages.yml
-
-Manual deploy (optional):
+Branch deployment steps:
 
 1. Install dependencies
-2. Run deploy script
+2. Run deploy script from the `front` folder
 
 ```bash
 npm install
 npm run deploy
 ```
+
+3. In GitHub repository settings, open Pages.
+4. Set Source to "Deploy from a branch".
+5. Select branch `gh-pages` and folder `/ (root)`.
+
+Important:
+
+- The `gh-pages` branch appears after the first successful `npm run deploy` push.
+- If you do not see `gh-pages` yet, run `npm run deploy` once and refresh the Pages settings.
 
 Notes:
 
