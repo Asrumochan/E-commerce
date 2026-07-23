@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { apiClient, extractErrorMessage } from '../api/client';
 
 const FALLBACK_IMAGE =
@@ -18,7 +18,7 @@ const Products = ({ onAddToCart, onToggleWishlist, isWishlisted }) => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -42,11 +42,11 @@ const Products = ({ onAddToCart, onToggleWishlist, isWishlisted }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, sortBy, order, inStock, minPrice, maxPrice]);
 
   useEffect(() => {
     fetchProducts();
-  }, [search, sortBy, order, inStock, page, minPrice, maxPrice]);
+  }, [fetchProducts]);
 
   const imgHandler = (evt) => {
     evt.target.src = FALLBACK_IMAGE;

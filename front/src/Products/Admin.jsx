@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, extractErrorMessage } from '../api/client';
 
@@ -23,10 +23,8 @@ const Admin = () => {
   const [actionProductId, setActionProductId] = useState('');
   const navigate = useNavigate();
 
-  const fetchData = async () => {
-    if (!products.length) {
-      setLoading(true);
-    }
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     setError('');
     try {
       const [productResponse, summaryResponse] = await Promise.all([
@@ -40,11 +38,11 @@ const Admin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const deleteProd = async (id) => {
     const shouldDelete = window.confirm('Delete this product permanently?');
